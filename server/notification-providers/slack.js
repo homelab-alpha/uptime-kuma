@@ -890,6 +890,7 @@ class Slack extends NotificationProvider {
              * @param {string} groupSettings  - A setting that dictates the formatting style for the section.
              * @returns {string}              - The formatted section text according to the specified group setting.
              */
+            // eslint-disable-next-line no-inner-declarations
             function formatSection(title, value, groupSettings) {
                 // Log the title, value, and groupSettings passed to the function for debugging purposes
                 completeLogDebug(
