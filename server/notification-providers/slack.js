@@ -666,26 +666,29 @@ class Slack extends NotificationProvider {
                     // TlS STATUS: TlS certificate is about to expire
                     {
                         const caseMessage4 = monitor ? monitor.message : null;
-                        statusMessage = caseMessage4 || "No additional information";
+                        statusMessage =
+                            caseMessage4 || "No additional information";
                     }
                     break;
                 case 5:
                     // SLACK NOTIFICATION TEST: Triggered manually to test the Slack integration
                     statusMessage =
-            "This notification has been manually triggered to test the Slack notification system.";
+                        "This notification has been manually triggered to test the Slack notification system.";
                     break;
                 case 6:
                     // REPORT: Fallback Message, issue detected
                     {
                         const caseMessage6 = monitor ? monitor.message : null;
-                        statusMessage = caseMessage6 || "No additional information";
+                        statusMessage =
+                            caseMessage6 || "No additional information";
                     }
                     break;
                 default:
                     // UNKNOWN: The system status is unrecognized or undefined
                     {
                         const defaultMessage = monitor ? monitor.message : null;
-                        statusMessage = defaultMessage || "No additional information";
+                        statusMessage =
+                            defaultMessage || "No additional information";
                     }
                     break;
             }
@@ -700,9 +703,9 @@ class Slack extends NotificationProvider {
 
             // Get the monitor port, ensuring it's a valid number and converting to string if valid, or return null if not available.
             const monitorPort =
-        monitor.port && typeof monitor.port === "number"
-            ? String(monitor.port)
-            : null;
+                monitor.port && typeof monitor.port === "number"
+                    ? String(monitor.port)
+                    : null;
             completeLogDebug("Monitor Port:", monitorPort);
 
             // Get the monitor interval (in seconds), trimming any extra spaces, or returning null if not available.
@@ -732,14 +735,16 @@ class Slack extends NotificationProvider {
             completeLogDebug("Monitor Description:", monitorDescription);
 
             // Get the monitor's keyword, trimming extra spaces, or returning null if not available.
-            const monitorKeyword = monitor.keyword ? monitor.keyword.trim() : null;
+            const monitorKeyword = monitor.keyword
+                ? monitor.keyword.trim()
+                : null;
             completeLogDebug("Monitor Keyword:", monitorKeyword);
 
             // Get the monitor's invert keyword, trimming extra spaces or returning null if not available.
             const monitorInvertKeyword =
-        typeof monitor.invertKeyword === "string"
-            ? monitor.invertKeyword.trim()
-            : null;
+                typeof monitor.invertKeyword === "string"
+                    ? monitor.invertKeyword.trim()
+                    : null;
             completeLogDebug("Monitor Invert Keyword:", monitorInvertKeyword);
 
             // Get the monitor's upside-down flag, trimming extra spaces or returning null if not available.
@@ -757,18 +762,22 @@ class Slack extends NotificationProvider {
             // Check if the heartbeat message is a valid string and not "N/A".
             // If valid, trim any leading or trailing spaces. Otherwise, set to null.
             const monitorDetails =
-        typeof heartbeat.msg === "string" && heartbeat.msg.trim() !== "N/A"
-            ? heartbeat.msg.trim()
-            : null;
+                typeof heartbeat.msg === "string" &&
+                heartbeat.msg.trim() !== "N/A"
+                    ? heartbeat.msg.trim()
+                    : null;
 
             // Log the monitor details for debugging purposes.
             completeLogDebug("Monitor Details:", monitorDetails);
 
             // Log a warning if `heartbeat.msg` is not a string or is missing.
             if (typeof heartbeat.msg !== "string") {
-                completeLogDebug("heartbeat.msg is not a string or is missing", {
-                    heartbeat,
-                });
+                completeLogDebug(
+                    "heartbeat.msg is not a string or is missing",
+                    {
+                        heartbeat,
+                    }
+                );
             }
 
             // Format the local day, date, and time based on the heartbeat data and timezone
@@ -826,7 +835,9 @@ class Slack extends NotificationProvider {
              */
             const getTagPriority = (tagName) => {
                 // Check if the tag name exists in the priority map
-                if (Object.prototype.hasOwnProperty.call(priorityOrder, tagName)) {
+                if (
+                    Object.prototype.hasOwnProperty.call(priorityOrder, tagName)
+                ) {
                     return priorityOrder[tagName];
                 }
 
@@ -838,7 +849,7 @@ class Slack extends NotificationProvider {
 
                 // Log the unrecognized tag for debugging purposes
                 completeLogDebug(
-          `Tag '${tagName}' doesn't match a known priority pattern. Defaulting to priority 7.`
+                    `Tag '${tagName}' doesn't match a known priority pattern. Defaulting to priority 7.`
                 );
                 return 7; // Default priority for unrecognized tags
             };
@@ -851,7 +862,7 @@ class Slack extends NotificationProvider {
 
                     // Log the comparison of priorities for debugging
                     completeLogDebug(
-              `Comparing priorities: ${a.name} (Priority: ${priorityA}) vs ${b.name} (Priority: ${priorityB})`
+                          `Comparing priorities: ${a.name} (Priority: ${priorityA}) vs ${b.name} (Priority: ${priorityB})`
                     );
 
                     return priorityA - priorityB; // Sort tags by ascending priority
@@ -962,8 +973,12 @@ class Slack extends NotificationProvider {
                 statusMessage
                     ? formatSection("Status", statusMessage, "setting-00")
                     : null,
-                monitorType ? formatSection("Type", monitorType, "setting-00") : null,
-                monitorPort ? formatSection("Port", monitorPort, "setting-00") : null,
+                monitorType
+                    ? formatSection("Type", monitorType, "setting-00")
+                    : null,
+                monitorPort
+                    ? formatSection("Port", monitorPort, "setting-00")
+                    : null,
                 monitorInterval
                     ? formatSection("Interval", monitorInterval, "setting-00")
                     : null,
@@ -979,35 +994,67 @@ class Slack extends NotificationProvider {
                     : null,
 
                 timezoneInfo.continent
-                    ? formatSection("Continent", timezoneInfo.continent, "setting-05")
+                    ? formatSection(
+                        "Continent",
+                        timezoneInfo.continent,
+                        "setting-05"
+                    )
                     : null,
                 timezoneInfo.country
-                    ? formatSection("Country", timezoneInfo.country, "setting-00")
+                    ? formatSection(
+                        "Country",
+                        timezoneInfo.country,
+                        "setting-00"
+                    )
                     : null,
                 timezoneInfo.localTimezone
-                    ? formatSection("Time-zone", timezoneInfo.localTimezone, "setting-00")
+                    ? formatSection(
+                        "Time-zone",
+                        timezoneInfo.localTimezone,
+                        "setting-00"
+                    )
                     : null,
                 localDay ? formatSection("Day", localDay, "setting-00") : null,
-                localDate ? formatSection("Date", localDate, "setting-00") : null,
-                localTime ? formatSection("Time", localTime, "setting-00") : null,
+                localDate
+                    ? formatSection("Date", localDate, "setting-00")
+                    : null,
+                localTime
+                    ? formatSection("Time", localTime, "setting-00")
+                    : null,
 
                 tagText ? formatSection("Tags", tagText, "setting-03") : null,
 
                 monitorDescription
-                    ? formatSection("Description", monitorDescription, "setting-02")
+                    ? formatSection(
+                        "Description",
+                        monitorDescription,
+                        "setting-02"
+                    )
                     : null,
 
                 monitorKeyword
                     ? formatSection("Keyword", monitorKeyword, "setting-05")
                     : null,
                 monitorInvertKeyword
-                    ? formatSection("Invert Keyword", monitorInvertKeyword, "setting-05")
+                    ? formatSection(
+                        "Invert Keyword",
+                        monitorInvertKeyword,
+                        "setting-05"
+                    )
                     : null,
                 monitorUpsideDown
-                    ? formatSection("Upside Down", monitorUpsideDown, "setting-05")
+                    ? formatSection(
+                        "Upside Down",
+                        monitorUpsideDown,
+                        "setting-05"
+                    )
                     : null,
                 monitorIgnoreTLS
-                    ? formatSection("Ignore TLS", monitorIgnoreTLS, "setting-05")
+                    ? formatSection(
+                        "Ignore TLS",
+                        monitorIgnoreTLS,
+                        "setting-05"
+                    )
                     : null,
 
                 monitorDetails
@@ -1107,7 +1154,7 @@ class Slack extends NotificationProvider {
 
                 // Extract the port directly from the monitor data if it's a valid port
                 const urlPort =
-          monitor.port || (validURL.protocol === "https:" ? 443 : 80);
+                    monitor.port || (validURL.protocol === "https:" ? 443 : 80);
 
                 // Log the extracted port for debugging purposes
                 completeLogDebug("Extracted URL port", { urlPort,
@@ -1116,10 +1163,11 @@ class Slack extends NotificationProvider {
                 // Define a set of ports that are considered reserved and should not be included
                 // Well-known ports (0 - 1023) plus a few commonly used ports
                 const excludedPorts = new Set([
-                    0, 1, 5, 7, 9, 11, 13, 17, 19, 20, 21, 22, 23, 25, 53, 67, 68, 69, 70,
-                    79, 88, 110, 119, 123, 137, 138, 139, 143, 161, 162, 194, 445, 465,
-                    514, 540, 543, 544, 546, 547, 563, 587, 593, 631, 636, 853, 993, 995,
-                    1080, 1433, 1434, 1521, 1522, 1723, 3306, 3389, 5432, 5900, 11211,
+                    0, 1, 5, 7, 9, 11, 13, 17, 19, 20, 21, 22, 23, 25, 53, 67,
+                    68, 69, 70, 79, 88, 110, 119, 123, 137, 138, 139, 143, 161,
+                    162, 194, 445, 465, 514, 540, 543, 544, 546, 547, 563, 587,
+                    593, 631, 636, 853, 993, 995, 1080, 1433, 1434, 1521, 1522,
+                    1723, 3306, 3389, 5432, 5900, 11211,
                 ]);
 
                 // Check if the port is in the excluded list (e.g., commonly reserved ports)
@@ -1171,6 +1219,179 @@ class Slack extends NotificationProvider {
 
         // Return the array of action buttons to be included in the Slack message payload
         return actions;
+    }
+
+    /**
+     * Creates the payload for a Slack message, which may include rich content based on heartbeat data.
+     * Constructs either a simple text message or a detailed rich message for Slack,
+     * depending on the notification configuration and heartbeat status.
+     * @param {object} notification   - Configuration object containing Slack notification settings (e.g., channel, username).
+     * @param {string} message        - The main content of the notification message.
+     * @param {object|null} monitor   - The monitor object containing details (optional).
+     *                                  If absent, a fallback monitor with default values will be used.
+     * @param {object|null} heartbeat - Heartbeat data for the monitor (optional). Determines the status for the message.
+     * @param {string} baseURL        - The base URL of Uptime Kuma, used to construct monitor-specific links.
+     * @returns {object}              - The formatted payload ready for sending as a Slack message.
+     */
+    createSlackData(notification, message, monitor, heartbeat, baseURL) {
+        const title = "Uptime Kuma"; // Default title for the notification
+
+        // Fallback to default monitor values if the monitor object is null or missing a 'name' property
+        if (!monitor || !monitor.name) {
+            completeLogDebug("Monitor object is null or missing 'name'", {
+                monitor,
+            });
+
+            // Use the 'message' as the fallback monitor name if the 'name' property is missing
+            const fallbackMessage =
+                monitor && statusMessage
+                    ? statusMessage
+                    : message || "Unknown Message";
+
+            // Default status is 'REPORT' (assuming 6 represents 'REPORT')
+            let fallbackMonitor = "Unknown Monitor";
+            let fallbackStatus = 6;
+
+            // Adjust fallback monitor name and status based on specific message conditions
+            if (/will be expired in/.test(fallbackMessage)) {
+                fallbackMonitor = "Uptime Kuma";
+                fallbackStatus = 4;
+            } else {
+                // Create a regex to match the target words
+                const regex =
+                    /\b(my|slack|alert|notification|alerts|testing)\b/gi;
+
+                // Find all matches
+                const matches = fallbackMessage.match(regex);
+
+                // If there are at least 3 matches
+                if (matches && matches.length >= 3) {
+                    fallbackMonitor = "Uptime Kuma";
+                    fallbackStatus = 5;
+                }
+            }
+
+            // Construct a fallback monitor object with dynamic 'name', 'message' and heartbeat status
+            monitor = { name: fallbackMonitor,
+                message: fallbackMessage };
+            heartbeat = { status: fallbackStatus };
+        }
+
+        // Initialize variables for status icon, message, and color based on heartbeat status
+        let statusIcon;
+        let statusMessage;
+        let colorBased;
+
+        // Determine the appropriate status icon, message, and color based on the heartbeat status
+        switch (heartbeat.status) {
+            case 0:
+                // DOWN: The system is offline or unreachable
+                statusIcon = "🔴";
+                statusMessage = "went down!";
+                colorBased = "#e01e5a";
+                break;
+            case 1:
+                // UP: The system is operational
+                statusIcon = "🟢";
+                statusMessage = "is back online!";
+                colorBased = "#2eb886";
+                break;
+            case 2:
+                // PENDING: The system is in a transitional state
+                statusIcon = "🟡";
+                statusMessage = "is pending...";
+                colorBased = "#f0a500";
+                break;
+            case 3:
+                // MAINTENANCE: The system is under maintenance
+                statusIcon = "⚙️";
+                statusMessage = "is under maintenance!";
+                colorBased = "#2196F3";
+                break;
+            case 4:
+                // TlS STATUS: TlS certificate is about to expire
+                statusIcon = "🔒";
+                statusMessage = "- This certificate is about to expire.";
+                colorBased = "#f0a500";
+                break;
+            case 5:
+                // SLACK NOTIFICATION TEST: Triggered manually to test the Slack integration
+                statusIcon = "🔵";
+                statusMessage =
+                    "- This notification has been manually triggered to test the Slack notification system.";
+                colorBased = "#2196F3";
+                break;
+            case 6:
+                // REPORT: Fallback Message, issue detected
+                statusIcon = "🚩";
+                statusMessage = "- Fallback Message, issue detected";
+                colorBased = "#e01e5a";
+                break;
+            default:
+                // UNKNOWN: The system status is unrecognized or undefined
+                statusIcon = "❓";
+                statusMessage = "- Status Unknown";
+                colorBased = "#808080";
+                break;
+        }
+
+        // Log the start of Slack message construction, including key parameters
+        completeLogDebug("Starting Slack data construction", {
+            notification,
+            message,
+            monitor,
+            heartbeat,
+            baseURL,
+        });
+
+        // Initialize the basic Slack message structure (text, channel, username, icon)
+        const data = {
+            text: `${statusIcon} ${monitor.name} ${statusMessage}`, // Main message text
+            channel: notification.slackchannel, // Slack channel from configuration
+            username: notification.slackusername || "Uptime Kuma (bot)", // Default username if not specified
+            icon_emoji: notification.slackiconemo || ":robot_face:", // Default emoji if not specified
+            attachments: [], // Slack attachments: Leave this value empty to avoid breaking the function
+        };
+
+        completeLogDebug("Initialized basic Slack message structure", { data });
+
+        // If rich message format is enabled and heartbeat data is available, create detailed blocks
+        if (heartbeat && notification.slackrichmessage) {
+            try {
+                // Construct the rich message blocks with additional monitor and heartbeat information
+                const blocks = this.buildBlocks(
+                    baseURL,
+                    monitor,
+                    heartbeat,
+                    title,
+                    message
+                );
+                data.attachments.push({
+                    color: colorBased, // Color based on monitor status
+                    blocks, // Attach rich message blocks
+                });
+
+                completeLogDebug("Rich message format applied", {
+                    color: colorBased,
+                    blocks,
+                });
+            } catch (error) {
+                // If there was an error building the rich message, fall back to a simple text message
+                completeLogError("Failed to build rich message blocks", {
+                    error: error.message,
+                });
+                data.text = `${title}\n${message}`; // Fallback to simple text format
+            }
+        } else {
+            // If rich message format is disabled or no heartbeat data, use a simple text message
+            data.text = `${title}\n${message}`;
+            completeLogInfo("Simple text format applied", { text: data.text });
+        }
+
+        // Log the final constructed Slack data payload before returning
+        completeLogDebug("Final Slack data payload constructed", { data });
+
+        return data;
     }
 }
 
