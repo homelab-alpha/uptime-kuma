@@ -1448,6 +1448,90 @@ class Slack extends NotificationProvider {
             throw new Error(`Migration failed: ${error.message}`);
         }
     }
+
+    /**
+     * Sends a Slack notification with optional detailed blocks if heartbeat data is provided.
+     * The message can include a channel notification tag if configured in the notification settings.
+     * @param {object} notification   - Slack notification configuration, including webhook URL, channel, and optional settings.
+     * @param {string} message        - The content to be sent in the Slack notification.
+     * @param {object|null} monitor   - The monitor object containing monitor details (optional).
+     * @param {object|null} heartbeat - Heartbeat data to be included in the notification (optional).
+     * @returns {Promise<string>}     - A success message indicating the notification was sent successfully.
+     * @throws {Error}                - Throws an error if the notification fails or configuration is invalid.
+     */
+    async send(notification = {}, message, monitor = null, heartbeat = null) {
+        const successMessage = "Sent Successfully.";
+
+        try {
+            // Validate the provided Slack notification configuration
+            this.validateNotificationConfig(notification);
+            completeLogDebug("Slack notification configuration validated", {
+                notification,
+            });
+        } catch (error) {
+            completeLogError("Slack notification configuration error", {
+                error: error.message,
+                notification,
+            });
+            throw new Error("Notification configuration is invalid.");
+        }
+
+        // Append the Slack channel notification tag if configured
+        if (notification.slackchannelnotify) {
+            message += " <!channel>";
+            completeLogInfo("Channel notification tag appended", {
+                message,
+            });
+        }
+
+        try {
+            // Retrieve the base URL for constructing monitor links
+            const baseURL = await setting("primaryBaseURL");
+            completeLogDebug("Retrieved base URL", { baseURL });
+
+            // Construct the payload for the Slack notification
+            const data = this.createSlackData(
+                notification,
+                message,
+                monitor,
+                heartbeat,
+                baseURL
+            );
+            completeLogDebug("Slack notification data constructed", { data });
+
+            // Process deprecated Slack button URL if specified
+            if (notification.slackbutton) {
+                await Slack.deprecateURL(notification.slackbutton);
+                completeLogWarn("Processed deprecated Slack button URL", {
+                    slackbutton: notification.slackbutton,
+                });
+            }
+
+            // Send the Slack notification using Axios
+            const response = await axios.post(notification.slackwebhookURL, data);
+            completeLogInfo("Slack notification sent successfully", {
+                responseData: response.data,
+            });
+
+            return successMessage;
+        } catch (error) {
+            // Log detailed error information if sending the notification fails
+            completeLogError("Slack notification failed", {
+                errorMessage: error.message,
+                errorStack: error.stack,
+                response: error.response?.data || "No response data",
+                notification,
+                constructedData: {
+                    message,
+                    monitor,
+                    heartbeat,
+                },
+            });
+
+            // Throw a general error for Axios-related issues
+            this.throwGeneralAxiosError(error);
+        }
+    }
 }
 
 module.exports = Slack;
