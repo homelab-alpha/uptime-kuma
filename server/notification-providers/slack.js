@@ -1053,6 +1053,125 @@ class Slack extends NotificationProvider {
             throw new Error("Slack message block construction failed.");
         }
     }
+
+    /**
+     * Builds action buttons for the Slack message to allow user interactions with the monitor.
+     * This includes buttons to visit the Uptime Kuma dashboard and the monitor's address (if available and valid).
+     * @param {string} baseURL - The base URL of the Uptime Kuma instance used to generate monitor-specific links.
+     * @param {object} monitor - The monitor object containing details like ID, name, and address.
+     * @returns {Array}        - An array of button objects to be included in the Slack message payload.
+     */
+    buildActions(baseURL, monitor) {
+        const actions = []; // Initialize an empty array to hold the action buttons
+
+        // Log the start of the action button creation process for debugging purposes
+        completeLogDebug("Starting action button creation", {
+            baseURL,
+            monitor,
+        });
+
+        // Add Uptime Kuma dashboard button if a valid baseURL is provided
+        if (baseURL) {
+            try {
+                // Construct a button object to direct users to the Uptime Kuma dashboard for this monitor
+                const uptimeButton = {
+                    type: "button",
+                    text: { type: "plain_text",
+                        text: "Visit Uptime Kuma" },
+                    value: "Uptime-Kuma",
+                    // Generate the full URL for the monitor's specific page on Uptime Kuma
+                    url: `${baseURL}${getMonitorRelativeURL(monitor.id)}`,
+                };
+
+                // Add the constructed button to the actions array
+                actions.push(uptimeButton);
+                completeLogDebug("Uptime Kuma button added", {
+                    button: uptimeButton,
+                });
+            } catch (e) {
+                // Log an error if constructing the URL fails (e.g., baseURL is incorrect or monitor ID is invalid)
+                completeLogError("Failed to construct Uptime Kuma button URL", {
+                    baseURL,
+                    monitorId: monitor.id,
+                    error: e.message,
+                });
+            }
+        }
+
+        // Extract and validate the monitor's address (e.g., the URL to the monitored service)
+        const address = this.extractAddress(monitor);
+        if (address) {
+            try {
+                // Create a URL object to validate the address format and parse components
+                const validURL = new URL(address);
+
+                // Extract the port directly from the monitor data if it's a valid port
+                const urlPort =
+          monitor.port || (validURL.protocol === "https:" ? 443 : 80);
+
+                // Log the extracted port for debugging purposes
+                completeLogDebug("Extracted URL port", { urlPort,
+                    validURL });
+
+                // Define a set of ports that are considered reserved and should not be included
+                // Well-known ports (0 - 1023) plus a few commonly used ports
+                const excludedPorts = new Set([
+                    0, 1, 5, 7, 9, 11, 13, 17, 19, 20, 21, 22, 23, 25, 53, 67, 68, 69, 70,
+                    79, 88, 110, 119, 123, 137, 138, 139, 143, 161, 162, 194, 445, 465,
+                    514, 540, 543, 544, 546, 547, 563, 587, 593, 631, 636, 853, 993, 995,
+                    1080, 1433, 1434, 1521, 1522, 1723, 3306, 3389, 5432, 5900, 11211,
+                ]);
+
+                // Check if the port is in the excluded list (e.g., commonly reserved ports)
+                if (excludedPorts.has(urlPort)) {
+                    // If the port is excluded, do not add a button and log the exclusion
+                    // NOTE: completeLogInfo is temporary by default; it should be completeLogDebug.
+                    completeLogInfo("Address excluded due to reserved port", {
+                        address: validURL.href,
+                        excludedPort: urlPort,
+                    });
+                } else {
+                    // If the port is valid (not in excluded ports), construct a button to visit the monitor's URL
+                    const monitorButton = {
+                        type: "button",
+                        text: {
+                            type: "plain_text",
+                            text: `Visit ${monitor.name}`,
+                        },
+                        value: "Site",
+                        url: validURL.href,
+                    };
+
+                    // Add the constructed button to the actions array
+                    actions.push(monitorButton);
+                    // NOTE: completeLogInfo is temporary by default; it should be completeLogDebug.
+                    completeLogInfo("Monitor button added", {
+                        button: monitorButton,
+                    });
+                }
+            } catch (e) {
+                // Log an warning if the address format is invalid (e.g., non-URL format or malformed address)
+                completeLogWarn("Invalid URL format", {
+                    address,
+                    monitorName: monitor.name,
+                    error: e.message,
+                });
+            }
+        } else {
+            // Log a message when no valid address is found for the monitor
+            // This may apply to non-URL-based monitors (e.g., MQTT, PING), which do not have a web address
+            completeLogDebug(
+                "No valid address found for monitor. This may apply to non-URL-based monitors (e.g., MQTT, PING).",
+                { monitor }
+            );
+        }
+
+        // Log the final list of action buttons created
+        completeLogDebug("Final actions array constructed", { actions });
+
+        // Return the array of action buttons to be included in the Slack message payload
+        return actions;
+    }
 }
 
 module.exports = Slack;
