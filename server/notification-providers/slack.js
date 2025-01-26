@@ -1393,6 +1393,61 @@ class Slack extends NotificationProvider {
 
         return data;
     }
+
+    /**
+     * Handles migration of a deprecated Slack button URL to the primary base URL if needed.
+     * Updates the `primaryBaseURL` setting with the provided deprecated URL if it is not already configured.
+     * @param {string} url      - The deprecated URL to be checked and potentially migrated.
+     *                            This URL could be in an older format or pointing to an outdated resource.
+     * @throws {Error}          - Throws an error if there is an issue updating the `primaryBaseURL`.
+     * @returns {Promise<void>} - Resolves when the migration process is complete.
+     */
+    static async deprecateURL(url) {
+        try {
+            // Retrieve the current primary base URL from the settings
+            const currentPrimaryBaseURL = await setting("primaryBaseURL");
+
+            // Log the start of the migration check
+            completeLogDebug("Checking if URL needs migration", {
+                url,
+                currentPrimaryBaseURL,
+            });
+
+            // Check if migration is required
+            if (!currentPrimaryBaseURL) {
+                completeLogInfo(
+                    "No primary base URL is set. Proceeding to migrate the deprecated URL.",
+                    { url }
+                );
+
+                // Attempt to set the deprecated URL as the new primary base URL
+                await setSettings("general", { primaryBaseURL: url });
+
+                // Log successful migration
+                completeLogInfo(
+                    "Successfully migrated deprecated URL to primary base URL",
+                    {
+                        newPrimaryBaseURL: url,
+                    }
+                );
+            } else {
+                // Log that no migration is required
+                completeLogInfo(
+                    "Primary base URL is already configured. No migration needed.",
+                    {
+                        currentPrimaryBaseURL,
+                    }
+                );
+            }
+        } catch (error) {
+            // Log and rethrow any errors encountered during the process
+            completeLogError("Failed to migrate deprecated URL", {
+                url,
+                error: error.message,
+            });
+            throw new Error(`Migration failed: ${error.message}`);
+        }
+    }
 }
 
 module.exports = Slack;
