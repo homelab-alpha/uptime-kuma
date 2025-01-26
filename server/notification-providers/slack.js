@@ -614,6 +614,445 @@ class Slack extends NotificationProvider {
 
         return dayjs(utcTime).tz(timezone).format("HH:mm:ss");
     }
+
+    /**
+     * Constructs the Slack message blocks, including the header, monitor details, and actions.
+     * Adds additional information such as monitor status, timezone, and local time to the message.
+     * @param {string} baseURL   - The base URL of Uptime Kuma, used for constructing monitor-specific links.
+     * @param {object} monitor   - The monitor object containing details like name, status, and tags.
+     * @param {object} heartbeat - Heartbeat data object that provides status and timestamp information.
+     * @param {string} title     - The title of the message (typically the alert title).
+     * @returns {Array<object>}  - An array of Slack message blocks, including headers, monitor details, and action buttons.
+     * @throws {Error}           - Throws an error if the monitor or heartbeat data is invalid, or if constructing the blocks fails.
+     */
+    buildBlocks(baseURL, monitor, heartbeat, title) {
+        const blocks = []; // Initialize an array to hold the message blocks
+
+        try {
+            // Log the creation of the message header with the title
+            completeLogDebug("Building message header block", { title });
+
+            // Create and add the header block with the message title
+            blocks.push({
+                type: "header",
+                text: {
+                    type: "plain_text",
+                    text: title,
+                },
+            });
+
+            // Initialize the variable for the status message based on the heartbeat status
+            let statusMessage;
+
+            // Switch statement to handle different heartbeat statuses and determine the appropriate status message
+            switch (heartbeat.status) {
+                case 0:
+                    // DOWN: The system is offline or unreachable
+                    statusMessage = "went down!";
+                    break;
+                case 1:
+                    // UP: The system is operational
+                    statusMessage = "is back online!";
+                    break;
+                case 2:
+                    // PENDING: The system is in a transitional state
+                    statusMessage = "is pending...";
+                    break;
+                case 3:
+                    // MAINTENANCE: The system is under maintenance
+                    statusMessage = "is under maintenance!";
+                    break;
+                case 4:
+                    // TlS STATUS: TlS certificate is about to expire
+                    {
+                        const caseMessage4 = monitor ? monitor.message : null;
+                        statusMessage = caseMessage4 || "No additional information";
+                    }
+                    break;
+                case 5:
+                    // SLACK NOTIFICATION TEST: Triggered manually to test the Slack integration
+                    statusMessage =
+            "This notification has been manually triggered to test the Slack notification system.";
+                    break;
+                case 6:
+                    // REPORT: Fallback Message, issue detected
+                    {
+                        const caseMessage6 = monitor ? monitor.message : null;
+                        statusMessage = caseMessage6 || "No additional information";
+                    }
+                    break;
+                default:
+                    // UNKNOWN: The system status is unrecognized or undefined
+                    {
+                        const defaultMessage = monitor ? monitor.message : null;
+                        statusMessage = defaultMessage || "No additional information";
+                    }
+                    break;
+            }
+
+            // Retrieve the monitor's information and only process if available.
+            // Log the initial monitor object for debugging purposes.
+            completeLogDebug("Monitor object received:", monitor);
+
+            // Get the monitor type, trimming any extra spaces or returning null if not available.
+            const monitorType = monitor.type ? monitor.type.trim() : null;
+            completeLogDebug("Monitor Type:", monitorType);
+
+            // Get the monitor port, ensuring it's a valid number and converting to string if valid, or return null if not available.
+            const monitorPort =
+        monitor.port && typeof monitor.port === "number"
+            ? String(monitor.port)
+            : null;
+            completeLogDebug("Monitor Port:", monitorPort);
+
+            // Get the monitor interval (in seconds), trimming any extra spaces, or returning null if not available.
+            // Add " Seconds" to the value if available.
+            const monitorInterval = monitor.interval
+                ? String(monitor.interval).trim() + " Seconds"
+                : null;
+            completeLogDebug("Monitor Interval:", monitorInterval);
+
+            // Get the maximum retries for the monitor, trimming any extra spaces, or returning null if not available.
+            const monitorMaxretries = monitor.maxretries
+                ? String(monitor.maxretries).trim()
+                : null;
+            completeLogDebug("Monitor Max Retries:", monitorMaxretries);
+
+            // Get the monitor's resend interval (in failures), trimming extra spaces or returning null if not available.
+            // Add " Failures" to the value if available.
+            const monitorResendInterval = monitor.resendInterval
+                ? String(monitor.resendInterval).trim() + " Failures"
+                : null;
+            completeLogDebug("Monitor Resend Interval:", monitorResendInterval);
+
+            // Get the description of the monitor, trimming extra spaces, or returning null if not available.
+            const monitorDescription = monitor.description
+                ? monitor.description.trim()
+                : null;
+            completeLogDebug("Monitor Description:", monitorDescription);
+
+            // Get the monitor's keyword, trimming extra spaces, or returning null if not available.
+            const monitorKeyword = monitor.keyword ? monitor.keyword.trim() : null;
+            completeLogDebug("Monitor Keyword:", monitorKeyword);
+
+            // Get the monitor's invert keyword, trimming extra spaces or returning null if not available.
+            const monitorInvertKeyword =
+        typeof monitor.invertKeyword === "string"
+            ? monitor.invertKeyword.trim()
+            : null;
+            completeLogDebug("Monitor Invert Keyword:", monitorInvertKeyword);
+
+            // Get the monitor's upside-down flag, trimming extra spaces or returning null if not available.
+            const monitorUpsideDown = monitor.upsideDown
+                ? String(monitor.upsideDown).trim()
+                : null;
+            completeLogDebug("Monitor Upside Down:", monitorUpsideDown);
+
+            // Get the monitor's TLS ignore flag, trimming any extra spaces or returning null if not available.
+            const monitorIgnoreTLS = monitor.ignoreTls
+                ? String(monitor.ignoreTls).trim()
+                : null;
+            completeLogDebug("Monitor Ignore TLS:", monitorIgnoreTLS);
+
+            // Check if the heartbeat message is a valid string and not "N/A".
+            // If valid, trim any leading or trailing spaces. Otherwise, set to null.
+            const monitorDetails =
+        typeof heartbeat.msg === "string" && heartbeat.msg.trim() !== "N/A"
+            ? heartbeat.msg.trim()
+            : null;
+
+            // Log the monitor details for debugging purposes.
+            completeLogDebug("Monitor Details:", monitorDetails);
+
+            // Log a warning if `heartbeat.msg` is not a string or is missing.
+            if (typeof heartbeat.msg !== "string") {
+                completeLogDebug("heartbeat.msg is not a string or is missing", {
+                    heartbeat,
+                });
+            }
+
+            // Format the local day, date, and time based on the heartbeat data and timezone
+            const timezoneInfo = this.getAllInformationFromTimezone(
+                heartbeat.timezone
+            );
+            const localDay = this.formatDay(
+                heartbeat.localDateTime,
+                heartbeat.timezone
+            );
+            const localDate = this.formatDate(
+                heartbeat.localDateTime,
+                heartbeat.timezone
+            );
+            const localTime = this.formatTime(
+                heartbeat.localDateTime,
+                heartbeat.timezone
+            );
+
+            // Log monitor status and timezone-related information for debugging
+            completeLogDebug("Formatted monitor information", {
+                statusMessage,
+                localDay,
+                localDate,
+                localTime,
+                timezoneInfo,
+            });
+
+            /**
+             * Get the priority of a tag based on its name.
+             * The priority order handles both lowercase and uppercase tag names.
+             * @param {string} tagName - The name of the tag.
+             * @returns {number}       - The priority value (lower is higher priority).
+             */
+            const priorityOrder = {
+                P0: 1,
+                P1: 2,
+                P2: 3,
+                P3: 4,
+                P4: 5, // Uppercase priority tags
+                p0: 1,
+                p1: 2,
+                p2: 3,
+                p3: 4,
+                p4: 5, // Lowercase priority tags
+                internal: 6,
+                external: 6, // 'internal' and 'external' share the same priority
+            };
+
+            /**
+             * Get the priority of a given tag.
+             * This function handles known patterns and assigns a default priority for unrecognized tags.
+             * @param {string} tagName - The name of the tag to check.
+             * @returns {number}       - The tag's priority (default to 7 if unknown).
+             */
+            const getTagPriority = (tagName) => {
+                // Check if the tag name exists in the priority map
+                if (Object.prototype.hasOwnProperty.call(priorityOrder, tagName)) {
+                    return priorityOrder[tagName];
+                }
+
+                // If the tag name matches a known pattern (e.g., P0, p1), assign the corresponding priority
+                const match = tagName.match(/^([pP]\d)/);
+                if (match) {
+                    return priorityOrder[match[1]] || 7; // Default to 7 for unrecognized priority patterns
+                }
+
+                // Log the unrecognized tag for debugging purposes
+                completeLogDebug(
+          `Tag '${tagName}' doesn't match a known priority pattern. Defaulting to priority 7.`
+                );
+                return 7; // Default priority for unrecognized tags
+            };
+
+            // Sort tags by their predefined priority and generate display text.
+            const sortedTags = monitor.tags
+                ? monitor.tags.sort((a, b) => {
+                    const priorityA = getTagPriority(a.name); // Get priority for the first tag
+                    const priorityB = getTagPriority(b.name); // Get priority for the second tag
+
+                    // Log the comparison of priorities for debugging
+                    completeLogDebug(
+              `Comparing priorities: ${a.name} (Priority: ${priorityA}) vs ${b.name} (Priority: ${priorityB})`
+                    );
+
+                    return priorityA - priorityB; // Sort tags by ascending priority
+                })
+                : [];
+
+            // Generate the display text from sorted tags, handle empty tags
+            const tagText = sortedTags.length
+                ? sortedTags.map((tag) => tag.name).join("\n - ")
+                : null; // Title-value with newline
+
+            // Log the results of sorting and the generated display text
+            completeLogDebug("Tags sorted successfully.", {
+                sortedTags: sortedTags.map((tag) => tag.name), // Log only the tag names for clarity
+                tagText, // Display text for the tags
+                totalTags: sortedTags.length, // Total number of tags
+            });
+
+            /**
+             * Formats a section of the message based on the provided title, value, and group settings.
+             * The formatting style is determined by the `groupSettings` parameter, which controls how
+             * the title and value are displayed in the resulting string.
+             * @param {string} title          - The title to be displayed for the section.
+             * @param {string} value          - The content or value associated with the section.
+             * @param {string} groupSettings  - A setting that dictates the formatting style for the section.
+             * @returns {string}              - The formatted section text according to the specified group setting.
+             */
+            function formatSection(title, value, groupSettings) {
+                // Log the title, value, and groupSettings passed to the function for debugging purposes
+                completeLogDebug(
+                    "Formatting section with title:",
+                    title,
+                    "value:",
+                    value,
+                    "groupSettings:",
+                    groupSettings
+                );
+
+                // Switch-case to handle different group settings for formatting
+                switch (groupSettings) {
+                    case "setting-00":
+                        // Format: Title-value with no newline
+                        completeLogDebug(
+                            "Applied 'setting-00': Title-value with no newline"
+                        );
+                        return `*${title}:* ${value}`;
+
+                    case "setting-01":
+                        // Format: Title-value with a newline after the value
+                        completeLogDebug(
+                            "Applied 'setting-01': Title-value with a newline after the value"
+                        );
+                        return `*${title}:* ${value}\n`;
+
+                    case "setting-02":
+                        // Format: Title-value with newlines before the title and value
+                        completeLogDebug(
+                            "Applied 'setting-02': Title-value with newlines before the title and value"
+                        );
+                        return `\n*${title}:*\n${value}`;
+
+                    case "setting-03":
+                        // Format: Title-value with a bullet point before the value
+                        completeLogDebug(
+                            "Applied 'setting-03': Title-value with a bullet point before the value"
+                        );
+                        return `\n*${title}:*\n - ${value}`;
+
+                    case "setting-04":
+                        // Special case: If value length is greater than 9, use a new format; otherwise, use a simple format
+                        completeLogDebug(
+                            "Applied 'setting-04': Value length is",
+                            value.length,
+                            "- Check if this is the intended behavior for short values"
+                        );
+                        return value.length > 9
+                            ? `\n*${title}:*\n${value}` // Newline format for long values
+                            : `\n*${title}:* ${value}`; // Simple format for short values
+
+                    case "setting-05":
+                        // Format: Title-value with newline before the title
+                        completeLogDebug(
+                            "Applied 'setting-05': Title-value with newline before the title"
+                        );
+                        return `\n*${title}:* ${value}`;
+
+                    default:
+                        // Log and handle unknown settings gracefully by returning a default format
+                        completeLogDebug(
+                            "Unknown setting detected. Returning default format for groupSettings:",
+                            groupSettings,
+                            "- Returning default format"
+                        );
+                        return `*${title}:* ${value}`;
+                }
+            }
+
+            /**
+             * Groups all monitor information into formatted sections based on specific settings.
+             * Each section is processed by the `formatSection` function with different formatting rules.
+             * The result is an array of formatted sections that will be used to generate a text block.
+             */
+            const groupMonitor = [
+                // Format sections using different settings for various monitor attributes
+                monitor.name
+                    ? formatSection("Monitor", monitor.name, "setting-00")
+                    : null,
+                statusMessage
+                    ? formatSection("Status", statusMessage, "setting-00")
+                    : null,
+                monitorType ? formatSection("Type", monitorType, "setting-00") : null,
+                monitorPort ? formatSection("Port", monitorPort, "setting-00") : null,
+                monitorInterval
+                    ? formatSection("Interval", monitorInterval, "setting-00")
+                    : null,
+                monitorMaxretries
+                    ? formatSection("Retries", monitorMaxretries, "setting-00")
+                    : null,
+                monitorResendInterval
+                    ? formatSection(
+                        "Resend Notification After",
+                        monitorResendInterval,
+                        "setting-00"
+                    )
+                    : null,
+
+                timezoneInfo.continent
+                    ? formatSection("Continent", timezoneInfo.continent, "setting-05")
+                    : null,
+                timezoneInfo.country
+                    ? formatSection("Country", timezoneInfo.country, "setting-00")
+                    : null,
+                timezoneInfo.localTimezone
+                    ? formatSection("Time-zone", timezoneInfo.localTimezone, "setting-00")
+                    : null,
+                localDay ? formatSection("Day", localDay, "setting-00") : null,
+                localDate ? formatSection("Date", localDate, "setting-00") : null,
+                localTime ? formatSection("Time", localTime, "setting-00") : null,
+
+                tagText ? formatSection("Tags", tagText, "setting-03") : null,
+
+                monitorDescription
+                    ? formatSection("Description", monitorDescription, "setting-02")
+                    : null,
+
+                monitorKeyword
+                    ? formatSection("Keyword", monitorKeyword, "setting-05")
+                    : null,
+                monitorInvertKeyword
+                    ? formatSection("Invert Keyword", monitorInvertKeyword, "setting-05")
+                    : null,
+                monitorUpsideDown
+                    ? formatSection("Upside Down", monitorUpsideDown, "setting-05")
+                    : null,
+                monitorIgnoreTLS
+                    ? formatSection("Ignore TLS", monitorIgnoreTLS, "setting-05")
+                    : null,
+
+                monitorDetails
+                    ? formatSection("Details", monitorDetails, "setting-04")
+                    : null,
+            ].filter(Boolean); // Remove null values to avoid adding unnecessary sections
+
+            // Join the formatted sections with newlines to create a complete text block
+            const blockText = groupMonitor.join("\n");
+
+            // Push the formatted block of text to the blocks array for further use (e.g., in a Slack message)
+            blocks.push({
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: blockText,
+                },
+            });
+
+            // Add action buttons if available
+            const actions = this.buildActions(baseURL, monitor);
+            if (actions.length) {
+                blocks.push({
+                    type: "actions",
+                    elements: actions,
+                });
+                completeLogDebug("Action buttons added", { actions });
+            } else {
+                completeLogInfo("No action buttons available to add");
+            }
+
+            // Log the final Slack message blocks construction
+            completeLogDebug("Final Slack message blocks constructed", {
+                blocks,
+            });
+
+            return blocks; // Return the constructed blocks
+        } catch (error) {
+            // Log error if the block construction fails
+            completeLogError("Failed to build Slack message blocks", {
+                error: error.message,
+            });
+            throw new Error("Slack message block construction failed.");
+        }
+    }
 }
 
 module.exports = Slack;
