@@ -132,14 +132,14 @@ function logMessage(logLevel, message, additionalInfo = null) {
     let logMessage = `${colors.timestamp}${timestamp}${colors.reset} `;
     logMessage += `${colors.white}[${colors.scriptName}${scriptName}${colors.white}]${colors.reset} `;
     logMessage += `${getLogLevelColor(logLevel)}${logLevel}:${
-    colors.reset
-  } ${message}`;
+        colors.reset
+    } ${message}`;
 
     // If additional information is provided, include it in the log message.
     if (additionalInfo) {
-    // Depending on the 'compactLogs' setting, format the additional info:
-    // - If compactLogs is enabled, the additional info will be in a single-line, non-indented format.
-    // - If compactLogs is disabled, the additional info will be pretty-printed with indentation for better readability.
+        // Depending on the 'compactLogs' setting, format the additional info:
+        // - If compactLogs is enabled, the additional info will be in a single-line, non-indented format.
+        // - If compactLogs is disabled, the additional info will be pretty-printed with indentation for better readability.
         const additionalInfoString = logLevelsEnabled.compactLogs
             ? JSON.stringify(additionalInfo) // Compact format (no indentation)
             : JSON.stringify(additionalInfo, null, 2); // Indented format (pretty print)
@@ -155,6 +155,75 @@ function logMessage(logLevel, message, additionalInfo = null) {
 
 class Slack extends NotificationProvider {
     name = "slack";
+
+    /**
+     * Validates the configuration object for Slack notifications to ensure all required fields are present.
+     * Throws an error if required fields are missing. Sets a default icon if no custom icon is provided.
+     * @param {object} notification - The Slack notification configuration object.
+     * @throws {Error}              - Throws an error if any required fields are missing or invalid.
+     * @returns {void}              - This function does not return any value.
+     */
+    validateNotificationConfig(notification) {
+        const requiredFields = [
+            {
+                field: "slackwebhookURL",
+                message: "Slack webhook URL is required for notifications.",
+            },
+            {
+                field: "slackchannel",
+                message: "Slack channel is required for notifications.",
+            },
+            {
+                field: "slackusername",
+                message: "Slack username is required for notifications.",
+            },
+        ];
+
+        // Log the start of the validation process
+        completeLogDebug(
+            "Starting validation of Slack notification configuration",
+            {
+                notification,
+            }
+        );
+
+        // Check each required field and log errors if any are missing
+        requiredFields.forEach(({ field, message }) => {
+            if (!notification[field]) {
+                completeLogError(
+                    "Missing required field in Slack notification configuration",
+                    {
+                        field, // Name of the missing field
+                        message, // Error message to provide context
+                        notification, // Current state of the notification object
+                    }
+                );
+                throw new Error(message); // Halt execution if a field is missing
+            }
+        });
+
+        // Log success when all required fields are validated
+        completeLogDebug(
+            "All required fields are present in Slack notification configuration",
+            {
+                requiredFields: requiredFields.map((field) => field.field),
+            }
+        );
+
+        // Handle Slack icon emoji: set default or confirm custom
+        if (!notification.slackiconemo) {
+            // No custom icon provided, setting default icon
+            notification.slackiconemo = ":robot_face:";
+            completeLogDebug("Default Slack icon emoji set", {
+                icon: notification.slackiconemo,
+            });
+        } else {
+            // Custom icon is provided, logging confirmation
+            completeLogDebug("Custom Slack icon emoji provided", {
+                icon: notification.slackiconemo,
+            });
+        }
+    }
 }
 
 module.exports = Slack;
