@@ -554,6 +554,26 @@ class Slack extends NotificationProvider {
             localTimezone
         };
     }
+
+    /**
+     * Formats a UTC time string into a readable local day string.
+     * Converts the UTC time to the specified timezone and formats it as the full weekday name.
+     * @param {string} utcTime  - The UTC time to be formatted (ISO 8601 string format).
+     * @param {string} timezone - The timezone to which the UTC time should be converted (e.g., "Europe/Amsterdam").
+     * @returns {string}        - The formatted local day string (e.g., "Monday").
+     */
+    formatDay(utcTime, timezone) {
+        if (!utcTime || !timezone) {
+            if (logLevelsEnabled.error) {
+                completeLogDebug(
+                    "Invalid input: Both utcTime and timezone are required."
+                );
+            }
+            return null;
+        }
+
+        return dayjs(utcTime).tz(timezone).format("dddd");
+    }
 }
 
 module.exports = Slack;
