@@ -1509,7 +1509,10 @@ class Slack extends NotificationProvider {
             }
 
             // Send the Slack notification using Axios
-            const response = await axios.post(notification.slackwebhookURL, data);
+            const response = await axios.post(
+                notification.slackwebhookURL,
+                data
+            );
             completeLogInfo("Slack notification sent successfully", {
                 responseData: response.data,
             });
