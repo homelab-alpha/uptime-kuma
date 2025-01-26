@@ -152,3 +152,9 @@ function logMessage(logLevel, message, additionalInfo = null) {
     // This message includes the log level, timestamp, script name, main message, and any additional info.
     console.log(logMessage);
 }
+
+class Slack extends NotificationProvider {
+    name = "slack";
+}
+
+module.exports = Slack;
